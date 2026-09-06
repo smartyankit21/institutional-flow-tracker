@@ -1,0 +1,40 @@
+name: Generate Weekly Institutional & HNI Report
+
+on:
+  schedule:
+    # Every Saturday at 03:00 UTC (08:30 IST)
+    - cron: '0 3 * * 6'
+  workflow_dispatch:
+
+jobs:
+  build-and-generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install System Dependencies for WeasyPrint
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpango-1.0-0 libharfbuzz0b libpangoft2-1.0-0 libffi-dev
+
+      - name: Install Python Packages
+        run: |
+          pip install requests pandas markdown weasyprint
+
+      - name: Execute Weekly Intelligence Engine
+        run: python run_pipeline.py
+
+      - name: Commit and Push Reports
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add Weekly_Flow_Report_*.md Weekly_Flow_Report_*.pdf
+          git commit -m "Auto-generated Weekly Institutional Report - $(date +'%Y-%m-%d')" || exit 0
+          git push
